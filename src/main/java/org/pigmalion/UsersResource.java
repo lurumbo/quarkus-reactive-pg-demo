@@ -22,15 +22,13 @@ import java.util.ArrayList;
 public class UsersResource {
 
     @Inject
-    io.vertx.mutiny.pgclient.PgPool dbClient;
+    io.vertx.mutiny.pgclient.PgPool client;
 
     private Logger logger = LoggerFactory.getLogger(UsersResource.class);
 
     @GET
     public Multi<User> getAll () {
-        logger.info("GET /users");
-        Multi<User> users = User.findAll(dbClient);
-        return users;
+        return User.findAll(client);
     }
 
     // @GET
@@ -56,7 +54,7 @@ public class UsersResource {
     // @GET
     public Uni<Response> getUniResponse () {
       System.out.println("Getting results users");
-      return User.findAllUni(dbClient)
+      return User.findAllUni(client)
         .onItem().apply(Response::ok)
         .onItem().apply(Response.ResponseBuilder::build);
     }

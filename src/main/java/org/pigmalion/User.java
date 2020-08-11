@@ -26,20 +26,21 @@ public class User {
 
     private static Logger logger = LoggerFactory.getLogger(User.class);
 
-    public static Multi<User> findAll (PgPool dbClient) {
-      String rawQuery = "SELECT id, name FROM users";
-      Uni<RowSet<Row>> rowSet = dbClient.query(rawQuery).execute();
-      logger.info("Executed query: " + rawQuery);
-      Multi<User> users = rowSet
-                .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
-                .onItem().apply(User::from);
-        return users;
+    private static User from (Row row) {
+        return new User(row.getLong("id"), row.getString("name"));
     }
 
-    public static Uni<List<User>> findAllUni (PgPool dbClient) {
+    public static Multi<User> findAll (PgPool client) {
+      return client
+                .query("SELECT id, name FROM users")
+                .execute()
+                .onItem().produceMulti(set -> Multi.createFrom().iterable(set))
+                .onItem().apply(User::from);
+    }
+
+    public static Uni<List<User>> findAllUni (PgPool client) {
       String rawQuery = "SELECT id, name FROM users";
-      Uni<RowSet<Row>> rowSet = dbClient.query(rawQuery).execute();
-      logger.info("Executed query: " + rawQuery);
+      Uni<RowSet<Row>> rowSet = client.query(rawQuery).execute();
       return rowSet.onItem().apply(pgRowSet -> {
           List<User> usersList = new ArrayList<>(pgRowSet.size());
           for (Row row : pgRowSet) {
@@ -47,10 +48,6 @@ public class User {
           }
           return usersList;
         });
-    }
-
-    private static User from (Row row) {
-        return new User(row.getLong("id"), row.getString("name"));
     }
 
 }
